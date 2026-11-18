@@ -1,4 +1,4 @@
-# Cámaras · God's Plan
+# Mi casa · God's Plan
 
 Panel web para ver las cámaras de casa: **https://camara.godsplan.site**
 
@@ -16,3 +16,8 @@ La página es estática (GitHub Pages). El video no pasa por internet: el navega
 3. Abre `go2rtc.exe` y entra a https://camara.godsplan.site
 
 La contraseña de la cámara **nunca** va en este repo.
+
+## Herramientas de red
+
+- `herramientas/radar_red.py`: escanea la red, lista los aparatos y avisa si se conecta uno desconocido (`python radar_red.py`, abre http://localhost:8000).
+- Checklist de seguridad del router en la página (se guarda en el navegador).

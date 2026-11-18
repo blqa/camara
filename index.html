@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cámaras · God's Plan</title>
+<title>Mi casa · God's Plan</title>
 <meta name="description" content="Panel de cámaras de casa con go2rtc.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📹</text></svg>">
 <style>
@@ -58,8 +58,8 @@
 <header>
   <div class="logo">📹</div>
   <div>
-    <h1>Cámaras de casa</h1>
-    <div class="sub">Panel propio · el video viaja dentro de tu red, no por la nube</div>
+    <h1>Mi casa</h1>
+    <div class="sub">Cámaras, red y seguridad · todo se queda dentro de tu casa</div>
   </div>
   <div class="reloj" id="reloj">--:--:--</div>
 </header>
@@ -95,6 +95,36 @@
       <a class="btn primario" href="https://protect-us.ismartlife.me/" target="_blank" rel="noopener">Abrir visor web ↗</a>
     </div>
     <p class="nota">Para entrar al visor: escanea el código QR que aparece con la app 390Eyes.</p>
+  </div>
+
+  <!-- Radar de la red -->
+  <div class="card">
+    <div class="card-head">
+      <span>📡</span><b>Radar de mi red</b>
+      <span class="estado">Programa para tu PC</span>
+    </div>
+    <p class="nota" style="padding-top:14px">Escanea tu WiFi cada minuto, te muestra todos los aparatos conectados
+      y pita cuando se conecta uno que no conoces. Le puedes poner nombre a cada aparato.</p>
+    <ol class="nota" style="margin:0 0 0 18px">
+      <li>Descárgalo y guárdalo en una carpeta.</li>
+      <li>En PowerShell, dentro de esa carpeta: <code>python radar_red.py</code></li>
+      <li>Se abre solo en <code>http://localhost:8000</code>.</li>
+    </ol>
+    <div class="acciones">
+      <a class="btn primario" href="herramientas/radar_red.py" download>⬇️ Descargar radar_red.py</a>
+    </div>
+    <p class="nota">No necesita instalar nada más que Python. Solo funciona mientras lo tienes abierto.</p>
+  </div>
+
+  <!-- Seguridad del router -->
+  <div class="card">
+    <div class="card-head">
+      <span>🛡️</span><b>Seguridad de mi red</b>
+      <span class="estado" id="estadoSeg">0 de 0</span>
+    </div>
+    <p class="nota" style="padding-top:14px">Marca cada punto cuando lo hayas hecho. Se guarda en este navegador.
+      Para entrar al router: <a href="http://192.168.100.1" target="_blank" rel="noopener" style="color:var(--acc)">192.168.100.1</a></p>
+    <div id="checklist" class="nota" style="display:grid;gap:10px"></div>
   </div>
 
   <!-- Ajustes y guía -->
@@ -252,6 +282,44 @@ streams:
   };
 
   conectar();
+
+  // ---------- Checklist de seguridad ----------
+  const PUNTOS = [
+    ["clave_router", "Cambiar la contraseña para entrar al router", "La que viene en la etiqueta del módem la conoce cualquiera que la vea."],
+    ["clave_wifi", "WiFi con contraseña larga y WPA2 o WPA3", "Mínimo 12 caracteres. Revisa en Seguridad inalámbrica."],
+    ["wps", "Apagar WPS", "Es el botón de conexión rápida; es una puerta fácil de forzar."],
+    ["invitados", "Crear red de invitados", "Las visitas y los aparatos chinos (cámaras, focos) no ven tus PCs."],
+    ["upnp", "Apagar UPnP", "Evita que aparatos abran puertos hacia internet por su cuenta."],
+    ["puertos", "Revisar que no haya puertos abiertos", "En Reenvío de puertos / Port forwarding no debe haber nada que no conozcas."],
+    ["camaras", "Cambiar contraseñas de las cámaras", "Sobre todo si alguna vez la escribiste en un chat."],
+    ["desconocidos", "Revisar aparatos desconocidos con el Radar", "Ponle nombre a todo; lo que no reconozcas, investígalo."],
+    ["firmware", "Actualizar el firmware del router", "Si no hay opción, Totalplay lo actualiza solo."],
+  ];
+  function marcado(k){ try { return localStorage.getItem("seg_" + k) === "1"; } catch(e){ return false; } }
+  function pintarChecklist(){
+    const cont = $("checklist");
+    cont.innerHTML = "";
+    let hechos = 0;
+    PUNTOS.forEach(([k, titulo, detalle]) => {
+      const ok = marcado(k);
+      if (ok) hechos++;
+      const l = document.createElement("label");
+      l.style.cssText = "display:flex;gap:10px;align-items:flex-start;cursor:pointer;color:var(--txt)";
+      l.innerHTML = '<input type="checkbox" style="margin-top:3px;accent-color:#10b981"><span><b></b><br><small></small></span>';
+      const c = l.querySelector("input");
+      c.checked = ok;
+      c.onchange = () => { try { localStorage.setItem("seg_" + k, c.checked ? "1" : "0"); } catch(e){} pintarChecklist(); };
+      l.querySelector("b").textContent = titulo;
+      l.querySelector("b").style.textDecoration = ok ? "line-through" : "none";
+      l.querySelector("small").textContent = detalle;
+      l.querySelector("small").style.color = "var(--sub)";
+      cont.appendChild(l);
+    });
+    const e = $("estadoSeg");
+    e.textContent = hechos + " de " + PUNTOS.length;
+    e.className = "estado " + (hechos === PUNTOS.length ? "ok" : "nube");
+  }
+  pintarChecklist();
 </script>
 </body>
 </html>

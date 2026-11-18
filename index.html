@@ -48,6 +48,18 @@
   input{background:var(--bg);border:1px solid #334155;color:var(--txt);border-radius:8px;padding:9px 10px;font:inherit}
   pre{background:#020617;border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:13px;color:#a7f3d0}
   ol{line-height:1.8;padding-left:20px} code{color:#a7f3d0}
+  .red-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;padding:0 16px}
+  .ap{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .ap.off{opacity:.45} .ap.nuevo{border-color:var(--warn);box-shadow:0 0 14px #f59e0b44}
+  .ap .t{display:flex;align-items:center;gap:8px;font-weight:700}
+  .ap .d{width:9px;height:9px;border-radius:50%;background:#64748b;flex:0 0 auto}
+  .ap.on .d{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .ap .tag{margin-left:auto;background:var(--warn);color:#111;font-size:10px;padding:2px 7px;border-radius:99px}
+  .ap .ip{font-family:Consolas,monospace;color:var(--acc);font-size:17px;margin-top:6px}
+  .ap .m{font-family:Consolas,monospace;color:#64748b;font-size:12px}
+  .ap small{color:var(--sub);display:block;margin-top:4px}
+  .ap input{width:100%;margin-top:8px;padding:6px 8px;font-size:13px}
+  .ap button{margin-top:6px;width:100%;justify-content:center;background:var(--warn);color:#111;border:0;font-weight:700}
   footer{text-align:center;color:var(--sub);font-size:13px;padding:24px}
   footer a{color:var(--acc)}
   @media (max-width:500px){main{grid-template-columns:1fr;padding:16px} header{padding:16px}}
@@ -97,23 +109,17 @@
     <p class="nota">Para entrar al visor: escanea el código QR que aparece con la app 390Eyes.</p>
   </div>
 
-  <!-- Radar de la red -->
-  <div class="card">
+  <!-- Aparatos de la red (en vivo desde casa.py) -->
+  <div class="card" style="grid-column:1/-1">
     <div class="card-head">
-      <span>📡</span><b>Radar de mi red</b>
-      <span class="estado">Programa para tu PC</span>
+      <span>📡</span><b>Aparatos en mi red</b>
+      <span class="estado" id="estadoRed">Revisando…</span>
     </div>
-    <p class="nota" style="padding-top:14px">Escanea tu WiFi cada minuto, te muestra todos los aparatos conectados
-      y pita cuando se conecta uno que no conoces. Le puedes poner nombre a cada aparato.</p>
-    <ol class="nota" style="margin:0 0 0 18px">
-      <li>Descárgalo y guárdalo en una carpeta.</li>
-      <li>En PowerShell, dentro de esa carpeta: <code>python radar_red.py</code></li>
-      <li>Se abre solo en <code>http://localhost:8000</code>.</li>
-    </ol>
+    <div id="resumenRed" class="nota" style="padding-top:14px"></div>
+    <div id="listaRed" class="red-grid"></div>
     <div class="acciones">
-      <a class="btn primario" href="herramientas/radar_red.py" download>⬇️ Descargar radar_red.py</a>
+      <button class="primario" id="btnEscanear">🔍 Escanear ahora</button>
     </div>
-    <p class="nota">No necesita instalar nada más que Python. Solo funciona mientras lo tienes abierto.</p>
   </div>
 
   <!-- Seguridad del router -->
@@ -142,9 +148,18 @@
       </div>
       <button class="primario" id="btnGuardar">Guardar y conectar</button>
 
-      <h3>Cómo hacerlo funcionar (una sola vez)</h3>
+      <h3>Todo en uno: un solo doble clic</h3>
       <ol>
-        <li>Descarga <b>go2rtc_win64.zip</b> de <a class="btn" style="padding:2px 8px" href="https://github.com/AlexxIT/go2rtc/releases" target="_blank" rel="noopener">github.com/AlexxIT/go2rtc/releases</a> y descomprímelo en <code>C:\go2rtc</code>.</li>
+        <li>Descarga estos dos archivos y guárdalos en <code>C:\camaras</code>, junto a <code>go2rtc.exe</code>:
+          <a class="btn" style="padding:2px 8px" href="herramientas/casa.py" download>casa.py</a>
+          <a class="btn" style="padding:2px 8px" href="herramientas/Iniciar.bat" download>Iniciar.bat</a></li>
+        <li>Dale doble clic a <b>Iniciar.bat</b>. Prende las cámaras y el radar de la red, y abre esta página. Deja la ventana negra abierta (ya no hace falta abrir go2rtc a mano).</li>
+        <li>Para que arranque solo al prender la PC: <code>Win + R</code> → <code>shell:startup</code> → pega ahí un acceso directo de <b>Iniciar.bat</b>.</li>
+      </ol>
+
+      <h3>Primera vez: instalar go2rtc</h3>
+      <ol>
+        <li>Descarga <b>go2rtc_win64.zip</b> de <a class="btn" style="padding:2px 8px" href="https://github.com/AlexxIT/go2rtc/releases" target="_blank" rel="noopener">github.com/AlexxIT/go2rtc/releases</a> y descomprímelo en <code>C:\camaras</code>.</li>
         <li>En esa carpeta crea un archivo <code>go2rtc.yaml</code> con esto (cambia <code>TU_CONTRASEÑA</code>):</li>
       </ol>
 <pre>api:
@@ -153,7 +168,7 @@
 streams:
   camara_cable: rtsp://admin:TU_CONTRASEÑA@192.168.100.4:554/stream1</pre>
       <ol start="3">
-        <li>Abre <code>go2rtc.exe</code>. Si Windows pregunta por el firewall, dale <b>Permitir</b>.</li>
+        <li>Dale doble clic a <b>Iniciar.bat</b>. Si Windows pregunta por el firewall, dale <b>Permitir</b>.</li>
         <li>Recarga esta página. Si Chrome pregunta si el sitio puede acceder a otros dispositivos o apps de tu equipo, dale <b>Permitir</b>.</li>
       </ol>
       <h3>Para que funcione el botón de fotos</h3>
@@ -282,6 +297,76 @@ streams:
   };
 
   conectar();
+
+  // ---------- Aparatos de la red (desde casa.py en tu PC) ----------
+  const RADAR = "http://localhost:8000";
+  let escribiendo = false;
+
+  function estadoRed(texto, tipo){ const e = $("estadoRed"); e.textContent = texto; e.className = "estado " + (tipo || ""); }
+
+  async function api(ruta, cuerpo){
+    await fetch(RADAR + ruta, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo || {}) });
+    cargarRed();
+  }
+
+  function ipNum(ip){ return (ip || "0.0.0.0").split(".").reduce((a, n) => a * 256 + (+n || 0), 0); }
+
+  async function cargarRed(){
+    if (escribiendo) return;
+    let info;
+    try {
+      const r = await fetch(RADAR + "/api/dispositivos", { cache: "no-store" });
+      info = await r.json();
+    } catch(e){
+      estadoRed("Apagado", "bad");
+      $("listaRed").innerHTML = "";
+      $("resumenRed").innerHTML = "No encuentro <b>casa.py</b> en tu PC. Dale doble clic a <code>Iniciar.bat</code> (ver guía abajo) y esta tarjeta se llena sola.";
+      return;
+    }
+    const lista = info.dispositivos.sort((a, b) =>
+      (b.nuevo - a.nuevo) || (b.en_linea - a.en_linea) || (ipNum(a.ip) - ipNum(b.ip)));
+    const conectados = lista.filter(d => d.en_linea).length;
+    const nuevos = lista.filter(d => d.nuevo).length;
+    estadoRed(nuevos ? nuevos + " nuevo(s)" : conectados + " conectados", nuevos ? "nube" : "ok");
+    $("resumenRed").textContent = "Red " + info.red + " · " + conectados + " conectados de " + lista.length +
+      " conocidos · último escaneo " + info.ultimo_escaneo + (info.escaneando ? " · escaneando…" : "");
+
+    const cont = $("listaRed");
+    cont.innerHTML = "";
+    lista.forEach(d => {
+      const el = document.createElement("div");
+      el.className = "ap " + (d.en_linea ? "on" : "off") + (d.nuevo ? " nuevo" : "");
+      el.innerHTML = '<div class="t"><span class="d"></span><span class="n"></span></div>' +
+        '<div class="ip"></div><div class="m"></div><small class="x"></small>' +
+        '<input placeholder="Ponle nombre y da Enter">';
+      el.querySelector(".n").textContent = d.nombre || d.host || "Sin nombre";
+      if (d.nuevo){ const t = document.createElement("span"); t.className = "tag"; t.textContent = "NUEVO"; el.querySelector(".t").appendChild(t); }
+      el.querySelector(".ip").textContent = d.ip || "";
+      el.querySelector(".m").textContent = d.mac;
+      const extra = [];
+      if (d.host && d.host !== d.nombre) extra.push("Red: " + d.host);
+      if (d.mac_privada) extra.push("MAC privada (probablemente un celular)");
+      extra.push("Última vez: " + (d.ultima_vez || "?"));
+      el.querySelector(".x").textContent = extra.join(" · ");
+      const inp = el.querySelector("input");
+      inp.value = d.nombre || "";
+      inp.onfocus = () => { escribiendo = true; };
+      inp.onblur = () => { escribiendo = false; };
+      inp.onkeydown = ev => { if (ev.key === "Enter"){ escribiendo = false; api("/api/nombrar", { mac: d.mac, nombre: inp.value }); } };
+      if (d.nuevo){
+        const b = document.createElement("button");
+        b.textContent = "Lo conozco";
+        b.onclick = () => api("/api/ok", { mac: d.mac });
+        el.appendChild(b);
+      }
+      cont.appendChild(el);
+    });
+  }
+
+  $("btnEscanear").onclick = () => api("/api/escanear").catch(() => cargarRed());
+  cargarRed();
+  setInterval(cargarRed, 15000);
+  setInterval(() => { if ($("estado1").classList.contains("bad")) conectar(); }, 15000);
 
   // ---------- Checklist de seguridad ----------
   const PUNTOS = [

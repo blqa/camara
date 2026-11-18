@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-RADAR DE MI RED
-Escanea tu WiFi, muestra los aparatos conectados en una pagina web
-y te avisa cuando se conecta uno que no conoces.
+MI CASA - un solo programa para todo
+  1) Prende go2rtc (las camaras) si esta en la misma carpeta.
+  2) Escanea tu red cada minuto y avisa si entra un aparato desconocido.
+  3) Le pasa todo a https://camara.godsplan.site para verlo en una sola pagina.
 
-Uso:  python radar_red.py
-Luego abre  http://localhost:8000  (se abre solo).
-Para detenerlo: Ctrl + C en la ventana negra.
+Uso:  doble clic en Iniciar.bat   (o:  python casa.py)
+Pon este archivo en la misma carpeta que go2rtc.exe (por ejemplo C:\\camaras).
+Para detenerlo: cierra la ventana negra o Ctrl + C.
 
 Solo usa librerias que ya trae Python, no hay que instalar nada.
 """
@@ -27,7 +28,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs
 
 # ---------------- AJUSTES (puedes cambiarlos) ----------------
-PUERTO = 8000            # la pagina sera http://localhost:8000
+PUERTO = 8000            # aqui escucha el radar (http://localhost:8000)
+PAGINA = "https://camara.godsplan.site"
+# Solo estas paginas pueden leer la lista de aparatos de tu red
+ORIGENES_PERMITIDOS = {PAGINA, f"http://localhost:{PUERTO}", f"http://127.0.0.1:{PUERTO}"}
 CADA_SEGUNDOS = 60       # cada cuanto escanea la red
 SONIDO_AL_DETECTAR = True
 
@@ -300,12 +304,73 @@ class Servidor(BaseHTTPRequestHandler):
         self.send_header("Location", "/")
         self.end_headers()
 
+    # --- Permisos para que camara.godsplan.site pueda hablar con este programa ---
+    def cors(self):
+        origen = self.headers.get("Origin", "")
+        if origen in ORIGENES_PERMITIDOS:
+            self.send_header("Access-Control-Allow-Origin", origen)
+            self.send_header("Vary", "Origin")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Private-Network", "true")
+
+    def responder_json(self, obj, codigo=200):
+        datos = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self.send_response(codigo)
+        self.cors()
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(datos)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(datos)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.cors()
+        self.end_headers()
+
     def do_GET(self):
+        if self.path.startswith("/api/dispositivos"):
+            with candado:
+                lista = [dict(d, mac=mac, mac_privada=(mac != "ESTA-PC" and es_mac_privada(mac)))
+                         for mac, d in estado["dispositivos"].items()]
+                info = {"red": estado["red"], "ultimo_escaneo": estado["ultimo_escaneo"],
+                        "escaneando": estado["escaneando"], "go2rtc": puerto_abierto(1984),
+                        "dispositivos": lista}
+            self.responder_json(info)
+            return
         self.responder(pagina())
 
     def do_POST(self):
         largo = int(self.headers.get("Content-Length", 0))
-        campos = parse_qs(self.rfile.read(largo).decode("utf-8"))
+        crudo = self.rfile.read(largo).decode("utf-8")
+
+        # API para la pagina de internet (manda JSON)
+        if self.path.startswith("/api/"):
+            if self.headers.get("Origin", "") not in ORIGENES_PERMITIDOS:
+                self.responder_json({"error": "origen no permitido"}, 403)
+                return
+            try:
+                cuerpo = json.loads(crudo or "{}")
+            except ValueError:
+                cuerpo = {}
+            mac = str(cuerpo.get("mac", ""))
+            with candado:
+                d = estado["dispositivos"].get(mac)
+                if self.path == "/api/nombrar" and d is not None:
+                    d["nombre"] = str(cuerpo.get("nombre", "")).strip()[:40]
+                    d["nuevo"] = False
+                    guardar()
+                elif self.path == "/api/ok" and d is not None:
+                    d["nuevo"] = False
+                    guardar()
+            if self.path == "/api/escanear":
+                threading.Thread(target=escanear, daemon=True).start()
+            self.responder_json({"ok": True})
+            return
+
+        # Formularios de la pagina local (http://localhost:8000)
+        campos = parse_qs(crudo)
         mac = campos.get("mac", [""])[0]
         with candado:
             d = estado["dispositivos"].get(mac)
@@ -321,22 +386,51 @@ class Servidor(BaseHTTPRequestHandler):
         self.regresar()
 
 
+def puerto_abierto(puerto):
+    try:
+        with socket.create_connection(("127.0.0.1", puerto), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
+def iniciar_go2rtc():
+    """Prende go2rtc escondido si esta en la misma carpeta y no esta corriendo ya."""
+    if puerto_abierto(1984):
+        print("  Camaras: go2rtc ya estaba prendido")
+        return None
+    exe = os.path.join(CARPETA, "go2rtc.exe" if ES_WINDOWS else "go2rtc")
+    if not os.path.exists(exe):
+        print("  Camaras: no encontre go2rtc.exe en esta carpeta (las camaras no se veran)")
+        return None
+    log = open(os.path.join(CARPETA, "go2rtc.log"), "a", encoding="utf-8")
+    proceso = subprocess.Popen([exe], cwd=CARPETA, stdout=log, stderr=subprocess.STDOUT,
+                               creationflags=SIN_VENTANA)
+    print("  Camaras: go2rtc prendido")
+    return proceso
+
+
 def main():
     datos, _ = cargar()
     estado["dispositivos"] = datos
+    print("=" * 50)
+    print("  MI CASA")
+    go2rtc = iniciar_go2rtc()
     threading.Thread(target=bucle, daemon=True).start()
     servidor = ThreadingHTTPServer(("127.0.0.1", PUERTO), Servidor)  # solo accesible desde esta PC
-    url = f"http://localhost:{PUERTO}"
+    print("  Red: escaneando cada minuto")
+    print(f"  Abre {PAGINA}")
+    print("  Deja esta ventana abierta. Para salir: cierrala o Ctrl + C")
     print("=" * 50)
-    print("  RADAR DE MI RED")
-    print(f"  Abre {url} en tu navegador")
-    print("  Para salir: Ctrl + C")
-    print("=" * 50)
-    threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    threading.Timer(2, lambda: webbrowser.open(PAGINA)).start()
     try:
         servidor.serve_forever()
     except KeyboardInterrupt:
-        print("\nRadar apagado. Bye!")
+        print("\nApagando...")
+    finally:
+        if go2rtc is not None:
+            go2rtc.terminate()
+        print("Bye!")
 
 
 if __name__ == "__main__":

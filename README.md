@@ -19,5 +19,5 @@ La contraseña de la cámara **nunca** va en este repo.
 
 ## Herramientas de red
 
-- `herramientas/radar_red.py`: escanea la red, lista los aparatos y avisa si se conecta uno desconocido (`python radar_red.py`, abre http://localhost:8000).
+- `herramientas/casa.py` + `Iniciar.bat`: un solo doble clic prende go2rtc y el radar de la red; la página muestra cámaras y aparatos en vivo.
 - Checklist de seguridad del router en la página (se guarda en el navegador).

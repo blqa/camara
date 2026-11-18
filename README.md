@@ -19,5 +19,5 @@ La contraseña de la cámara **nunca** va en este repo.
 
 ## Herramientas de red
 
-- `herramientas/casa.py` + `Iniciar.bat`: un solo doble clic prende go2rtc y el radar de la red; la página muestra cámaras y aparatos en vivo.
+- `herramientas/casa.ps1` + `Iniciar.bat` (PowerShell, no hay que instalar nada): un solo doble clic prende go2rtc y el radar de la red; la página muestra cámaras y aparatos en vivo.
 - Checklist de seguridad del router en la página (se guarda en el navegador).

@@ -109,7 +109,7 @@
     <p class="nota">Para entrar al visor: escanea el código QR que aparece con la app 390Eyes.</p>
   </div>
 
-  <!-- Aparatos de la red (en vivo desde casa.py) -->
+  <!-- Aparatos de la red (en vivo desde casa.ps1) -->
   <div class="card" style="grid-column:1/-1">
     <div class="card-head">
       <span>📡</span><b>Aparatos en mi red</b>
@@ -151,7 +151,7 @@
       <h3>Todo en uno: un solo doble clic</h3>
       <ol>
         <li>Descarga estos dos archivos y guárdalos en <code>C:\camaras</code>, junto a <code>go2rtc.exe</code>:
-          <a class="btn" style="padding:2px 8px" href="herramientas/casa.py" download>casa.py</a>
+          <a class="btn" style="padding:2px 8px" href="herramientas/casa.ps1" download>casa.ps1</a>
           <a class="btn" style="padding:2px 8px" href="herramientas/Iniciar.bat" download>Iniciar.bat</a></li>
         <li>Dale doble clic a <b>Iniciar.bat</b>. Prende las cámaras y el radar de la red, y abre esta página. Deja la ventana negra abierta (ya no hace falta abrir go2rtc a mano).</li>
         <li>Para que arranque solo al prender la PC: <code>Win + R</code> → <code>shell:startup</code> → pega ahí un acceso directo de <b>Iniciar.bat</b>.</li>
@@ -298,7 +298,7 @@ streams:
 
   conectar();
 
-  // ---------- Aparatos de la red (desde casa.py en tu PC) ----------
+  // ---------- Aparatos de la red (desde casa.ps1 en tu PC) ----------
   const RADAR = "http://localhost:8000";
   let escribiendo = false;
 
@@ -320,7 +320,7 @@ streams:
     } catch(e){
       estadoRed("Apagado", "bad");
       $("listaRed").innerHTML = "";
-      $("resumenRed").innerHTML = "No encuentro <b>casa.py</b> en tu PC. Dale doble clic a <code>Iniciar.bat</code> (ver guía abajo) y esta tarjeta se llena sola.";
+      $("resumenRed").innerHTML = "No encuentro <b>Mi casa</b> prendido en tu PC. Dale doble clic a <code>Iniciar.bat</code> (ver guía abajo) y esta tarjeta se llena sola.";
       return;
     }
     const lista = info.dispositivos.sort((a, b) =>

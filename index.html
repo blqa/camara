@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cámaras · God's Plan</title>
+<meta name="description" content="Panel de cámaras de casa con go2rtc.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📹</text></svg>">
+<style>
+  :root{
+    --bg:#0a0f1c; --panel:#111827; --line:#1f2937; --txt:#e5e7eb; --sub:#94a3b8;
+    --ok:#10b981; --warn:#f59e0b; --bad:#ef4444; --acc:#38bdf8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+  header{display:flex;align-items:center;gap:16px;padding:20px 28px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;
+        background:linear-gradient(135deg,#0ea5e9,#10b981)}
+  h1{margin:0;font-size:22px} .sub{color:var(--sub);font-size:13px;margin-top:2px}
+  .reloj{margin-left:auto;font-family:Consolas,monospace;font-size:20px;color:var(--acc)}
+  main{padding:24px 28px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+  .card-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .card-head b{font-size:16px}
+  .estado{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:99px;background:#1f2937;color:var(--sub);display:flex;gap:6px;align-items:center}
+  .estado::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+  .estado.ok{color:var(--ok);background:#064e3b55} .estado.bad{color:var(--bad);background:#7f1d1d55}
+  .estado.nube{color:var(--warn);background:#78350f55}
+  .video{position:relative;aspect-ratio:16/9;background:#000}
+  .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .vacio{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--sub);font-size:14px;line-height:1.5}
+  .vacio b{color:var(--txt);display:block;font-size:16px;margin-bottom:6px}
+  .acciones{display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap}
+  button,.btn{background:#1f2937;color:var(--txt);border:1px solid #334155;border-radius:10px;padding:8px 14px;
+         font:inherit;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  button:hover,.btn:hover{border-color:var(--acc)}
+  .primario{background:var(--ok);border-color:var(--ok);color:#022c22;font-weight:700}
+  .fotos{display:flex;gap:8px;padding:0 16px 16px;overflow-x:auto}
+  .fotos a{flex:0 0 auto;position:relative}
+  .fotos img{height:72px;border-radius:8px;border:1px solid var(--line);display:block}
+  .fotos span{position:absolute;bottom:3px;left:4px;font-size:10px;background:#000a;padding:1px 4px;border-radius:4px}
+  .nota{color:var(--sub);font-size:13px;padding:0 16px 16px;line-height:1.5}
+  section.ajustes{grid-column:1/-1}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 20px}
+  summary{cursor:pointer;font-weight:700}
+  .campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:16px 0}
+  label{font-size:13px;color:var(--sub);display:grid;gap:6px}
+  input{background:var(--bg);border:1px solid #334155;color:var(--txt);border-radius:8px;padding:9px 10px;font:inherit}
+  pre{background:#020617;border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font-size:13px;color:#a7f3d0}
+  ol{line-height:1.8;padding-left:20px} code{color:#a7f3d0}
+  footer{text-align:center;color:var(--sub);font-size:13px;padding:24px}
+  footer a{color:var(--acc)}
+  @media (max-width:500px){main{grid-template-columns:1fr;padding:16px} header{padding:16px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📹</div>
+  <div>
+    <h1>Cámaras de casa</h1>
+    <div class="sub">Panel propio · el video viaja dentro de tu red, no por la nube</div>
+  </div>
+  <div class="reloj" id="reloj">--:--:--</div>
+</header>
+
+<main>
+  <!-- Cámara de cable (RTSP por go2rtc) -->
+  <div class="card">
+    <div class="card-head">
+      <span>🔌</span><b>Cámara de cable</b>
+      <span class="estado" id="estado1">Revisando…</span>
+    </div>
+    <div class="video" id="video1">
+      <div class="vacio" id="vacio1"><div><b>Conectando con go2rtc…</b>Si no aparece, abre la guía de abajo.</div></div>
+    </div>
+    <div class="acciones">
+      <button class="primario" id="btnFoto">📸 Tomar foto</button>
+      <button id="btnRecargar">🔄 Recargar</button>
+      <button id="btnPantalla">⛶ Pantalla completa</button>
+    </div>
+    <div class="fotos" id="fotos"></div>
+  </div>
+
+  <!-- Cámara 2NLF (solo nube) -->
+  <div class="card">
+    <div class="card-head">
+      <span>☁️</span><b>Cámara 2NLF</b>
+      <span class="estado nube">Solo nube</span>
+    </div>
+    <div class="video">
+      <div class="vacio"><div><b>Esta cámara no deja sacar su video</b>Tiene todos sus puertos cerrados y solo funciona con la app 390Eyes o con su visor web.</div></div>
+    </div>
+    <div class="acciones">
+      <a class="btn primario" href="https://protect-us.ismartlife.me/" target="_blank" rel="noopener">Abrir visor web ↗</a>
+    </div>
+    <p class="nota">Para entrar al visor: escanea el código QR que aparece con la app 390Eyes.</p>
+  </div>
+
+  <!-- Ajustes y guía -->
+  <section class="ajustes">
+    <details id="guia">
+      <summary>⚙️ Ajustes y guía de instalación</summary>
+
+      <div class="campos">
+        <label>Dirección de go2rtc
+          <input id="host" placeholder="http://localhost:1984">
+        </label>
+        <label>Nombre de la cámara en go2rtc
+          <input id="stream" placeholder="camara_cable">
+        </label>
+      </div>
+      <button class="primario" id="btnGuardar">Guardar y conectar</button>
+
+      <h3>Cómo hacerlo funcionar (una sola vez)</h3>
+      <ol>
+        <li>Descarga <b>go2rtc_win64.zip</b> de <a class="btn" style="padding:2px 8px" href="https://github.com/AlexxIT/go2rtc/releases" target="_blank" rel="noopener">github.com/AlexxIT/go2rtc/releases</a> y descomprímelo en <code>C:\go2rtc</code>.</li>
+        <li>En esa carpeta crea un archivo <code>go2rtc.yaml</code> con esto (cambia <code>TU_CONTRASEÑA</code>):</li>
+      </ol>
+<pre>api:
+  origin: "*"
+
+streams:
+  camara_cable: rtsp://admin:TU_CONTRASEÑA@192.168.100.4:554/stream1</pre>
+      <ol start="3">
+        <li>Abre <code>go2rtc.exe</code>. Si Windows pregunta por el firewall, dale <b>Permitir</b>.</li>
+        <li>Recarga esta página. Si Chrome pregunta si el sitio puede acceder a otros dispositivos o apps de tu equipo, dale <b>Permitir</b>.</li>
+      </ol>
+      <p class="nota" style="padding:0">La contraseña de la cámara vive solo en tu PC, dentro de <code>go2rtc.yaml</code>. Esta página nunca la ve ni la guarda.
+      El video en vivo funciona en la PC donde corre go2rtc.</p>
+    </details>
+  </section>
+</main>
+
+<footer>
+  Hecho por <a href="https://godsplan.site" target="_blank" rel="noopener">God's Plan</a> ·
+  <a href="mailto:contacto@godsplan.site">contacto@godsplan.site</a>
+</footer>
+
+<script>
+  // ---------- Ajustes guardados en este navegador ----------
+  const DEF = { host: "http://localhost:1984", stream: "camara_cable" };
+  function leer(k){ try { return localStorage.getItem("camara_" + k) || DEF[k]; } catch(e){ return DEF[k]; } }
+  function escribir(k, v){ try { localStorage.setItem("camara_" + k, v); } catch(e){} }
+
+  const $ = id => document.getElementById(id);
+  const host = () => leer("host").replace(/\/+$/, "");
+  const stream = () => leer("stream");
+
+  $("host").value = leer("host");
+  $("stream").value = leer("stream");
+
+  // ---------- Reloj ----------
+  setInterval(() => { $("reloj").textContent = new Date().toLocaleTimeString("es-MX"); }, 1000);
+
+  // ---------- Estado de la cámara ----------
+  function estado(texto, tipo){
+    const e = $("estado1");
+    e.textContent = texto;
+    e.className = "estado " + (tipo || "");
+  }
+
+  function mostrarAyuda(titulo, detalle){
+    const cont = $("video1");
+    cont.querySelectorAll("iframe").forEach(f => f.remove());
+    $("vacio1").style.display = "";
+    $("vacio1").innerHTML = "<div><b></b><span></span></div>";
+    $("vacio1").querySelector("b").textContent = titulo;
+    $("vacio1").querySelector("span").textContent = detalle;
+  }
+
+  async function conectar(){
+    estado("Revisando…");
+    try {
+      const r = await fetch(host() + "/api/streams", { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const lista = await r.json();
+      if (!(stream() in lista)){
+        estado("Sin cámara", "bad");
+        mostrarAyuda("go2rtc está prendido, pero no tiene la cámara",
+          "Revisa que en go2rtc.yaml el nombre sea \"" + stream() + "\".");
+        return;
+      }
+    } catch(e){
+      estado("Desconectada", "bad");
+      mostrarAyuda("No encuentro go2rtc en " + host(),
+        "Abre go2rtc.exe en tu PC y recarga. Si ya está abierto, revisa que go2rtc.yaml tenga 'origin: \"*\"' (ver guía abajo).");
+      return;
+    }
+    // Video en vivo con el reproductor de go2rtc
+    const cont = $("video1");
+    cont.querySelectorAll("iframe").forEach(f => f.remove());
+    const f = document.createElement("iframe");
+    f.src = host() + "/stream.html?src=" + encodeURIComponent(stream()) + "&mode=webrtc,mse";
+    f.allow = "autoplay; fullscreen; local-network-access";
+    f.allowFullscreen = true;
+    cont.appendChild(f);
+    $("vacio1").style.display = "none";
+    estado("En vivo", "ok");
+  }
+
+  // ---------- Botones ----------
+  $("btnRecargar").onclick = conectar;
+
+  $("btnPantalla").onclick = () => {
+    const v = $("video1");
+    (v.requestFullscreen || v.webkitRequestFullscreen || (()=>{})).call(v);
+  };
+
+  $("btnGuardar").onclick = () => {
+    escribir("host", $("host").value.trim() || DEF.host);
+    escribir("stream", $("stream").value.trim() || DEF.stream);
+    conectar();
+  };
+
+  $("btnFoto").onclick = async () => {
+    const b = $("btnFoto");
+    b.disabled = true; b.textContent = "📸 Tomando…";
+    try {
+      const r = await fetch(host() + "/api/frame.jpeg?src=" + encodeURIComponent(stream()), { cache: "no-store" });
+      if (!r.ok) throw new Error();
+      const url = URL.createObjectURL(await r.blob());
+      const hora = new Date();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "camara_" + hora.toISOString().slice(0,19).replace(/[:T]/g, "-") + ".jpg";
+      a.title = "Clic para descargar";
+      a.innerHTML = '<img alt="Foto de la cámara"><span></span>';
+      a.querySelector("img").src = url;
+      a.querySelector("span").textContent = hora.toLocaleTimeString("es-MX");
+      $("fotos").prepend(a);
+    } catch(e){
+      alert("No pude tomar la foto. Revisa que go2rtc esté abierto.");
+    }
+    b.disabled = false; b.textContent = "📸 Tomar foto";
+  };
+
+  conectar();
+</script>
+</body>
+</html>

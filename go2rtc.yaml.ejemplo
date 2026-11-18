@@ -1,0 +1,6 @@
+# Copia este archivo a C:\go2rtc\go2rtc.yaml y cambia TU_CONTRASEÑA
+api:
+  origin: "*"   # deja que camara.godsplan.site hable con go2rtc
+
+streams:
+  camara_cable: rtsp://admin:TU_CONTRASEÑA@192.168.100.4:554/stream1

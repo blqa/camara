@@ -126,6 +126,14 @@ streams:
         <li>Abre <code>go2rtc.exe</code>. Si Windows pregunta por el firewall, dale <b>Permitir</b>.</li>
         <li>Recarga esta página. Si Chrome pregunta si el sitio puede acceder a otros dispositivos o apps de tu equipo, dale <b>Permitir</b>.</li>
       </ol>
+      <h3>Para que funcione el botón de fotos</h3>
+      <ol>
+        <li>Descarga <b>ffmpeg-release-essentials.zip</b> de <a class="btn" style="padding:2px 8px" href="https://www.gyan.dev/ffmpeg/builds/" target="_blank" rel="noopener">gyan.dev/ffmpeg/builds</a>.</li>
+        <li>Dentro del zip, en la carpeta <code>bin</code>, copia <code>ffmpeg.exe</code> a la misma carpeta de go2rtc.</li>
+        <li>Agrega esto al final de <code>go2rtc.yaml</code> (con la ruta de tu carpeta) y reinicia go2rtc:</li>
+      </ol>
+<pre>ffmpeg:
+  bin: C:\camaras\ffmpeg.exe</pre>
       <p class="nota" style="padding:0">La contraseña de la cámara vive solo en tu PC, dentro de <code>go2rtc.yaml</code>. Esta página nunca la ve ni la guarda.
       El video en vivo funciona en la PC donde corre go2rtc.</p>
     </details>
@@ -217,8 +225,16 @@ streams:
     const b = $("btnFoto");
     b.disabled = true; b.textContent = "📸 Tomando…";
     try {
-      const r = await fetch(host() + "/api/frame.jpeg?src=" + encodeURIComponent(stream()), { cache: "no-store" });
-      if (!r.ok) throw new Error();
+      let r;
+      try {
+        r = await fetch(host() + "/api/frame.jpeg?src=" + encodeURIComponent(stream()), { cache: "no-store" });
+      } catch(e){ throw new Error("No encuentro go2rtc. Revisa que esté abierto."); }
+      if (!r.ok){
+        const txt = (await r.text()).trim().slice(0, 200);
+        throw new Error(/ffmpeg|exec|file not found/i.test(txt)
+          ? "go2rtc necesita ffmpeg para tomar fotos (ver guía abajo).\n\nDetalle: " + txt
+          : "go2rtc respondió con error " + r.status + ".\n\nDetalle: " + txt);
+      }
       const url = URL.createObjectURL(await r.blob());
       const hora = new Date();
       const a = document.createElement("a");
@@ -230,7 +246,7 @@ streams:
       a.querySelector("span").textContent = hora.toLocaleTimeString("es-MX");
       $("fotos").prepend(a);
     } catch(e){
-      alert("No pude tomar la foto. Revisa que go2rtc esté abierto.");
+      alert("No pude tomar la foto.\n\n" + e.message);
     }
     b.disabled = false; b.textContent = "📸 Tomar foto";
   };

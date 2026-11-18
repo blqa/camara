@@ -4,3 +4,7 @@ api:
 
 streams:
   camara_cable: rtsp://admin:TU_CONTRASEÑA@192.168.100.4:554/stream1
+
+# Para que funcione el boton de fotos (copia ffmpeg.exe junto a go2rtc.exe)
+ffmpeg:
+  bin: C:\camaras\ffmpeg.exe

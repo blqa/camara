@@ -1,12 +1,12 @@
 # MI CASA - un solo programa para todo (no necesita instalar nada)
 #   1) Prende go2rtc (las camaras) si esta en la misma carpeta.
 #   2) Escanea tu red cada minuto y pita si entra un aparato desconocido.
-#   3) Le pasa todo a https://camara.godsplan.site para verlo en una sola pagina.
+#   3) Le pasa todo a https://camara.godsplan.dev para verlo en una sola pagina.
 # Uso: doble clic en Iniciar.bat. Para salir: cierra la ventana.
 
 $Carpeta   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Puerto    = 8000
-$Pagina    = "https://camara.godsplan.site"
+$Pagina    = "https://camara.godsplan.dev"
 $Permitidos = @($Pagina, "http://localhost:$Puerto")
 $Archivo   = Join-Path $Carpeta "dispositivos.json"
 $CadaSeg   = 60
